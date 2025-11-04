@@ -83,7 +83,7 @@ const { blobServiceClient, containerName } = require("../config/azureBlob");
 const path = require("path");
 const fs = require("fs");
 
-// Upload file to Azure Blob
+// 🟢 Upload file to Azure Blob
 async function uploadToAzure(localFilePath) {
   try {
     if (!localFilePath || !fs.existsSync(localFilePath)) {
@@ -100,7 +100,7 @@ async function uploadToAzure(localFilePath) {
     await blockBlobClient.uploadFile(localFilePath);
     console.log("✅ Uploaded to Azure:", blockBlobClient.url);
 
-    // delete local file after upload
+    // delete local file
     fs.unlink(localFilePath, (err) => {
       if (err) console.warn("⚠️ Could not delete local file:", err.message);
     });
@@ -112,14 +112,36 @@ async function uploadToAzure(localFilePath) {
   }
 }
 
-// Save / Update Professional Details
+// 🟢 Save / Update Professional Details
 exports.saveProfessionalDetails = async (req, res) => {
   try {
-    const { empId, companyName, designation, joiningDate, leavingDate } = req.body;
-    if (!empId) return res.status(400).json({ msg: "Employee ID is required" });
+    const {
+      empId,
+      companyName,
+      companyLocation,
+      designation,
+      joiningDate,
+      leavingDate,
+      duration,
+      roles,
+      projects,
+      skills,
+      salary,
+      hrName,
+      hrEmail,
+      hrPhone,
+      managerName,
+      managerEmail,
+      managerPhone,
+    } = req.body;
+
+    if (!empId) {
+      return res.status(400).json({ msg: "Employee ID is required" });
+    }
 
     console.log("📁 Uploaded Files:", req.files);
 
+    // Single file upload handler
     const uploadFileField = async (fieldName) => {
       const file = req.files?.[fieldName]?.[0];
       if (file) {
@@ -130,12 +152,14 @@ exports.saveProfessionalDetails = async (req, res) => {
           originalname: file.originalname,
           mimetype: file.mimetype,
           size: file.size,
-          path: azureUrl, // store Azure URL instead of local path
+          path: file.path,
+          filePathUrl: azureUrl,
         };
       }
       return null;
     };
 
+    // Multiple file upload handler
     const uploadMultipleFiles = async (fieldName) => {
       const files = req.files?.[fieldName] || [];
       const uploadedFiles = [];
@@ -147,7 +171,8 @@ exports.saveProfessionalDetails = async (req, res) => {
           originalname: file.originalname,
           mimetype: file.mimetype,
           size: file.size,
-          path: azureUrl,
+          path: file.path,
+          filePathUrl: azureUrl,
         });
       }
       return uploadedFiles;
@@ -157,14 +182,26 @@ exports.saveProfessionalDetails = async (req, res) => {
     const relievingLetter = await uploadFileField("relievingLetter");
     const salarySlips = await uploadMultipleFiles("salarySlips");
 
-    const details = await ProfessionalDetails.findOneAndUpdate(
+    const updatedDetails = await ProfessionalDetails.findOneAndUpdate(
       { empId },
       {
         empId,
         companyName,
+        companyLocation,
         designation,
         joiningDate,
         leavingDate,
+        duration,
+        roles,
+        projects,
+        skills,
+        salary,
+        hrName,
+        hrEmail,
+        hrPhone,
+        managerName,
+        managerEmail,
+        managerPhone,
         ...(profilePicture && { profilePicture }),
         ...(relievingLetter && { relievingLetter }),
         ...(salarySlips.length && { salarySlips }),
@@ -174,7 +211,7 @@ exports.saveProfessionalDetails = async (req, res) => {
 
     res.status(200).json({
       msg: "✅ Professional details saved successfully",
-      data: details,
+      data: updatedDetails,
     });
   } catch (error) {
     console.error("❌ Error saving professional details:", error);
@@ -182,11 +219,10 @@ exports.saveProfessionalDetails = async (req, res) => {
   }
 };
 
-// GET All
+// 🟢 Get All Professional Details
 exports.getAllProfessionalDetails = async (req, res) => {
   try {
     const details = await ProfessionalDetails.find();
-    console.log("📄 Found professional details:", details.length);
     if (details.length === 0) {
       return res.status(404).json({ msg: "No professional details found", data: [] });
     }
