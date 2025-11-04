@@ -1,12 +1,6 @@
-const Employee = require('../models/Employee');
-const jwt = require('jsonwebtoken');
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
+const Employee = require("../models/Employee");
 
-const JWT_SECRET = process.env.JWT_SECRET || 'secretkey';
-const JWT_EXPIRES = process.env.JWT_EXPIRES || '1h';
-
-// 🧾 Register Employee
+// 🧾 Register new employee
 exports.registerEmployee = async (req, res) => {
   try {
     const {
@@ -19,143 +13,63 @@ exports.registerEmployee = async (req, res) => {
       confirmPassword,
     } = req.body;
 
-    // Validation
-    if (!firstName || !lastName || !dateOfBirth || !email || !phoneNumber || !password || !confirmPassword) {
-      return res.status(400).json({ msg: 'All fields are required' });
+    // ✅ Simple check first
+    if (password !== confirmPassword) {
+      return res.status(400).json({ msg: "Passwords do not match" });
     }
-    if (password !== confirmPassword) return res.status(400).json({ msg: 'Passwords do not match' });
 
-    // Check duplicate email
-    const exists = await Employee.findOne({ email }).lean();
-    if (exists) return res.status(409).json({ msg: 'Email already registered' });
-
-    const dob = new Date(dateOfBirth);
-    if (isNaN(dob.getTime())) return res.status(400).json({ msg: 'Invalid date of birth format' });
-
-    // Create employee (role defaults to "employee")
-    const employee = new Employee({
+    // ✅ Create new employee
+    const newEmployee = new Employee({
       firstName,
       lastName,
-      dateOfBirth: dob,
+      dateOfBirth,
       email,
       phoneNumber,
       password,
     });
 
-    employee.confirmPassword = confirmPassword;
-    await employee.save();
+    // ✅ Set virtual field manually (important!)
+    newEmployee.confirmPassword = confirmPassword;
 
-    return res.status(201).json({
-      msg: 'Employee registered successfully',
+    // Save to MongoDB
+    await newEmployee.save();
+
+    res.status(201).json({
+      msg: "✅ Employee registered successfully",
       employee: {
-        id: employee._id,
-        firstName: employee.firstName,
-        lastName: employee.lastName,
-        email: employee.email,
-        phoneNumber: employee.phoneNumber,
-        dateOfBirth: employee.dateOfBirth,
-        role: employee.role, // ✅ Added
+        firstName: newEmployee.firstName,
+        lastName: newEmployee.lastName,
+        email: newEmployee.email,
+        phoneNumber: newEmployee.phoneNumber,
+        role: newEmployee.role,
       },
     });
   } catch (err) {
-    console.error('Registration error:', err);
-    if (err.code === 11000) {
-      const field = Object.keys(err.keyValue || {})[0] || 'field';
-      return res.status(409).json({ msg: `${field} already exists` });
-    }
-    if (err.name === 'ValidationError') {
-      const errors = Object.values(err.errors).map(e => e.message);
-      return res.status(400).json({ msg: 'Validation failed', errors });
-    }
-    return res.status(500).json({ msg: 'Server error during registration', error: err.message });
+    console.error("❌ Error registering employee:", err);
+    res.status(500).json({ msg: "Server Error", error: err.message });
+  }
+};
+// 🟢 Get all employees
+exports.getAllEmployees = async (req, res) => {
+  try {
+    const employees = await Employee.find().select("-password"); // hide password
+    res.status(200).json({ msg: "Employees fetched successfully", employees });
+  } catch (err) {
+    console.error("❌ Error fetching employees:", err);
+    res.status(500).json({ msg: "Server Error", error: err.message });
   }
 };
 
-// 🔑 Login Employee (includes role)
-
-
-exports.loginEmployee = async (req, res) => {
+// 🟢 Get single employee by ID
+exports.getEmployeeById = async (req, res) => {
   try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({ msg: "Email and password are required" });
-    }
-
-    // ✅ include password field when fetching employee
-    const employee = await Employee.findOne({ email }).select("+password");
-
+    const employee = await Employee.findById(req.params.id).select("-password");
     if (!employee) {
       return res.status(404).json({ msg: "Employee not found" });
     }
-
-    const isMatch = await employee.comparePassword(password);
-    if (!isMatch) {
-      return res.status(400).json({ msg: "Invalid credentials" });
-    }
-
-    const token = jwt.sign(
-      { id: employee._id, email: employee.email, role: employee.role },
-      process.env.JWT_SECRET || "secretkey",
-      { expiresIn: "7d" }
-    );
-
-    res.status(200).json({
-      msg: "Login successful",
-      token,
-      employee: {
-        id: employee._id,
-        firstName: employee.firstName,
-        lastName: employee.lastName,
-        email: employee.email,
-        phoneNumber: employee.phoneNumber,
-        role: employee.role,
-      },
-    });
+    res.status(200).json({ msg: "Employee fetched successfully", employee });
   } catch (err) {
-    console.error("❌ Login error:", err);
-    res.status(500).json({ msg: "Server error" });
-  }
-};
-
-// 📋 Get All Employees
-exports.getAllEmployees = async (req, res) => {
-  try {
-    const employees = await Employee.find().select('-password');
-    if (!employees.length) return res.status(404).json({ msg: 'No employees found' });
-    res.status(200).json({ msg: 'Employees fetched successfully', count: employees.length, employees });
-  } catch (err) {
-    console.error('Get all employees error:', err);
-    res.status(500).json({ msg: 'Server error', error: err.message });
-  }
-};
-
-// 🔍 Get Employee by ID
-exports.getEmployeeById = async (req, res) => {
-  try {
-    const id = req.params.id;
-    if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ msg: 'Invalid employee id' });
-    const employee = await Employee.findById(id).select('-password');
-    if (!employee) return res.status(404).json({ msg: 'Employee not found' });
-    res.status(200).json({ msg: 'Employee fetched successfully', employee });
-  } catch (err) {
-    console.error('Get employee by ID error:', err);
-    res.status(500).json({ msg: 'Server error', error: err.message });
-  }
-};
-
-// 🔎 Search Employees
-exports.searchEmployees = async (req, res) => {
-  try {
-    const q = (req.query.q || '').trim();
-    if (!q) return res.status(400).json({ msg: "Query param 'q' is required" });
-    const regex = new RegExp(q.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&'), 'i');
-    const employees = await Employee.find({
-      $or: [{ firstName: regex }, { lastName: regex }, { email: regex }],
-    }).select('-password');
-    return res.status(200).json({ msg: 'Search results', count: employees.length, employees });
-  } catch (err) {
-    console.error('Search employees error:', err);
-    return res.status(500).json({ msg: 'Server error', error: err.message });
+    console.error("❌ Error fetching employee:", err);
+    res.status(500).json({ msg: "Server Error", error: err.message });
   }
 };

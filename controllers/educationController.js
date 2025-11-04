@@ -160,3 +160,30 @@ exports.saveEducationDetails = async (req, res) => {
     res.status(500).json({ msg: "Server error", error: err.message });
   }
 };
+exports.getAllEducationDetails = async (req, res) => {
+  try {
+    const details = await EducationDetails.find();
+    res.status(200).json(details);
+  } catch (err) {
+    console.error("❌ Error fetching education details:", err);
+    res.status(500).json({ msg: "Server Error", error: err.message });
+  }
+};
+
+// 🟢 Get education details by employeeId
+exports.getEducationDetailsByEmployeeId = async (req, res) => {
+  try {
+    const { employeeId } = req.params;
+    const details = await EducationDetails.findOne({ employee: employeeId });
+
+    if (!details) {
+      return res.status(404).json({ msg: "Education details not found" });
+    }
+
+    res.status(200).json(details);
+  } catch (err) {
+    console.error("❌ Error fetching education details by ID:", err);
+    res.status(500).json({ msg: "Server Error", error: err.message });
+  }
+};
+

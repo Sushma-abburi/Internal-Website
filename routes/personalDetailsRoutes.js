@@ -3,7 +3,7 @@ const express = require("express");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const { savePersonalDetails } = require("../controllers/personalDetailsController");
+const { savePersonalDetails,getPersonalDetails,getAllPersonalDetails } = require("../controllers/personalDetailsController");
 
 const router = express.Router();
 
@@ -30,5 +30,11 @@ router.post(
   ]),
   savePersonalDetails
 );
+router.get("/", getAllPersonalDetails);
+
+router.get("/:employeeId", getPersonalDetails);
+
+// ✅ NEW: Get all employees' personal details
+
 
 module.exports = router;

@@ -285,18 +285,26 @@ exports.savePersonalDetails = async (req, res) => {
 };
 
 // 📋 Fetch Personal Details by Employee ID
+//const PersonalDetails = require("../models/personalDetails");
+
+// 🟢 Get all
+exports.getAllPersonalDetails = async (req, res) => {
+  try {
+    const details = await PersonalDetails.find();
+    res.json(details);
+  } catch (err) {
+    res.status(500).json({ msg: "Error fetching personal details" });
+  }
+};
+
+// 🟢 Get by employeeId
 exports.getPersonalDetails = async (req, res) => {
   try {
-    const { employeeId } = req.params;
-    const details = await PersonalDetails.findOne({ employee: employeeId });
-
-    if (!details) {
+    const details = await PersonalDetails.findOne({ empId: req.params.employeeId }); // 👈 match your schema field
+    if (!details)
       return res.status(404).json({ msg: "Personal details not found" });
-    }
-
-    res.status(200).json(details);
+    res.json(details);
   } catch (err) {
-    console.error("❌ Error fetching personal details:", err);
-    res.status(500).json({ msg: "Server Error", error: err.message });
+    res.status(500).json({ msg: "Error fetching personal details" });
   }
 };

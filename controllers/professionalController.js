@@ -186,19 +186,30 @@ exports.saveProfessionalDetails = async (req, res) => {
 exports.getAllProfessionalDetails = async (req, res) => {
   try {
     const details = await ProfessionalDetails.find();
-    res.json(details);
+    console.log("📄 Found professional details:", details.length);
+    if (details.length === 0) {
+      return res.status(404).json({ msg: "No professional details found", data: [] });
+    }
+    res.status(200).json(details);
   } catch (err) {
-    res.status(500).json({ msg: "Error fetching professional details" });
+    console.error("❌ Error fetching professional details:", err);
+    res.status(500).json({ msg: "Server Error", error: err.message });
   }
 };
 
-// GET by empId
+// 🟢 Get Professional Details by Employee ID
 exports.getProfessionalDetailsByEmpId = async (req, res) => {
   try {
-    const details = await ProfessionalDetails.findOne({ empId: req.params.empId });
-    if (!details) return res.status(404).json({ msg: "Not found" });
-    res.json(details);
+    const { empId } = req.params;
+    const details = await ProfessionalDetails.findOne({ empId });
+
+    if (!details) {
+      return res.status(404).json({ msg: "Professional details not found" });
+    }
+
+    res.status(200).json(details);
   } catch (err) {
-    res.status(500).json({ msg: "Error fetching professional details" });
+    console.error("❌ Error fetching professional details:", err);
+    res.status(500).json({ msg: "Server Error", error: err.message });
   }
 };

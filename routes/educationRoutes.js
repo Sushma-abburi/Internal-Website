@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const multer = require("multer");
 const path = require("path");
-const { saveEducationDetails } = require("../controllers/educationController");
+const { saveEducationDetails,getAllEducationDetails,getEducationDetailsByEmployeeId } = require("../controllers/educationController");
 
 // ✅ Configure multer for local storage
 const storage = multer.diskStorage({
@@ -25,5 +25,10 @@ const uploadFields = upload.fields([
 
 // ✅ Route
 router.post("/save", uploadFields, saveEducationDetails);
+router.get("/", getAllEducationDetails);
+
+// ✅ GET Route — Fetch Education Details by Employee ID
+router.get("/:employeeId", getEducationDetailsByEmployeeId);
+
 
 module.exports = router;

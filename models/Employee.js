@@ -2,6 +2,13 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 
 const employeeSchema = new mongoose.Schema({
+  empId: {
+    type: String,
+    unique: true,
+    default: function () {
+      return "EMP" + Date.now(); // 🆔 Example: EMP1730714819035
+    },
+  },
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
   dateOfBirth: { type: Date, required: true },
@@ -11,11 +18,11 @@ const employeeSchema = new mongoose.Schema({
   role: {
     type: String,
     enum: ["employee", "admin"],
-    default: "employee", // Default role
+    default: "employee",
   },
 });
 
-// 🔐 Password encryption before saving
+// 🔐 Password encryption
 employeeSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
   const salt = await bcrypt.genSalt(10);
@@ -23,7 +30,19 @@ employeeSchema.pre("save", async function (next) {
   next();
 });
 
-// 🔍 Compare entered password with hashed one
+// 🧩 Confirm password (virtual)
+employeeSchema.virtual("confirmPassword")
+  .set(function (value) {
+    this._confirmPassword = value;
+  });
+
+employeeSchema.pre("validate", function (next) {
+  if (this.password !== this._confirmPassword) {
+    this.invalidate("confirmPassword", "Passwords do not match");
+  }
+  next();
+});
+
 employeeSchema.methods.comparePassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
