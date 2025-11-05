@@ -25,6 +25,13 @@
 
 // module.exports = mongoose.model("PersonalDetails", personalDetailsSchema);
 const mongoose = require("mongoose");
+const { Schema } = mongoose;
+const fileSub = new Schema({
+  filename: String,
+  path: String,
+  mimetype: String,
+  size: Number,
+});
 
 const personalDetailsSchema = new mongoose.Schema(
   {
@@ -70,7 +77,7 @@ const personalDetailsSchema = new mongoose.Schema(
     aadharUpload: { type: fileSub, required: true }, // file URL or path
 
     panNumber: { type: String, required: true },
-    panUpload: { type: String, required: true }, // file URL or path
+    panUpload: { type: fileSub, required: true }, // file URL or path
 
     // --- Marriage Info ---
     isMarried: { type: Boolean, default: false },

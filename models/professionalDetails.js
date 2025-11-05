@@ -70,7 +70,13 @@
 
 // module.exports = mongoose.model("ProfessionalDetails", professionalDetailsSchema);
 const mongoose = require("mongoose");
-
+const { Schema } = mongoose;
+const fileSub = new Schema({
+  filename: String,
+  path: String,
+  mimetype: String,
+  size: Number,
+});
 // --------------------
 // 🔹 Experience Schema
 // --------------------
