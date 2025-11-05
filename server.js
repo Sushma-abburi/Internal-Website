@@ -3,6 +3,7 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const connectDB = require("./config/db");
 const path=require('path');
+const fs=require('fs');
 const { BlobServiceClient } = require("@azure/storage-blob");
 
 
@@ -27,6 +28,10 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+// if (!fs.existsSync(uploadDir)) {
+//   fs.mkdirSync(uploadDir, { recursive: true });
+// }
+
 
 // ✅ Mount routes properly
 app.use("/api/auth", authRoutes);

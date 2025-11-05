@@ -62,7 +62,7 @@ const educationSchema = new mongoose.Schema({
     max: 100,
   },
   certificate10: {
-    type: String, // store file URL or path (e.g., from cloud or uploads folder)
+    type: fileSub, // store file URL or path (e.g., from cloud or uploads folder)
     required: true,
   },
 
@@ -88,7 +88,7 @@ const educationSchema = new mongoose.Schema({
     max: 100,
   },
   certificate12: {
-    type: String,
+    type: fileSub,
     required: true,
   },
   gapReason12: {
@@ -113,7 +113,7 @@ const educationSchema = new mongoose.Schema({
     max: 100,
   },
   certificateUG: {
-    type: String,
+    type: fileSub,
     required: true,
   },
   gapReasonUG: {
@@ -138,7 +138,7 @@ const educationSchema = new mongoose.Schema({
     max: 100,
   },
   certificateMTech: {
-    type: String,
+    type: fileSub,
   },
 
   // ---------- Common Metadata ----------

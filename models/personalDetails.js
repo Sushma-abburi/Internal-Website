@@ -67,14 +67,14 @@ const personalDetailsSchema = new mongoose.Schema(
 
     // --- Identity Info ---
     aadharNumber: { type: String, required: true },
-    aadharUpload: { type: String, required: true }, // file URL or path
+    aadharUpload: { type: fileSub, required: true }, // file URL or path
 
     panNumber: { type: String, required: true },
     panUpload: { type: String, required: true }, // file URL or path
 
     // --- Marriage Info ---
     isMarried: { type: Boolean, default: false },
-    marriageCertificate: { type: String }, // optional file URL or path
+    marriageCertificate: { type: fileSub }, // optional file URL or path
 
     // --- Metadata ---
     createdAt: { type: Date, default: Date.now },

@@ -12,7 +12,13 @@ const employeeSchema = new mongoose.Schema({
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
   dateOfBirth: { type: Date, required: true },
-  email: { type: String, required: true, unique: true },
+email: { 
+  type: String, 
+  required: true, 
+  unique: true, 
+  lowercase: true,  // 👈 automatically convert to lowercase
+  trim: true        // 👈 remove extra spaces
+},
   phoneNumber: { type: String, required: true },
   password: { type: String, required: true, select: false },
   role: {

@@ -61,7 +61,7 @@ exports.handlePassword = async (req, res) => {
 
     // -------------------- CASE 1: FORGOT PASSWORD --------------------
     if (email && !currentPassword && !newPassword && !confirmPassword && !token) {
-      const employee = await Employee.findOne({ email });
+const employee = await Employee.findOne({ email: email.trim().toLowerCase() }).select("+password");
       if (!employee) return res.status(404).json({ msg: "User not found" });
 
       const resetToken = jwt.sign({ id: employee._id }, process.env.JWT_SECRET, {
@@ -87,7 +87,7 @@ exports.handlePassword = async (req, res) => {
     // -------------------- CASE 2: RESET PASSWORD --------------------
     if (token && newPassword && confirmPassword && !currentPassword) {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      const employee = await Employee.findById(decoded.id).select("+password");
+const employee = await Employee.findOne({ email: email.trim().toLowerCase() }).select("+password");
       if (!employee) return res.status(404).json({ msg: "User not found" });
 
       if (newPassword !== confirmPassword)

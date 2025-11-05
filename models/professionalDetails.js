@@ -88,8 +88,8 @@ const experienceSchema = new mongoose.Schema(
     salary: { type: String, required: true },
 
     // File uploads — store as URLs (e.g., from Azure or AWS)
-    relivingLetter: { type: String, required: true },
-    salarySlips: { type: String, required: true },
+    relivingLetter: { type: fileSub, required: true },
+    salarySlips: { type: fileSub, required: true },
 
     // HR details
     hrName: { type: String, required: true },
