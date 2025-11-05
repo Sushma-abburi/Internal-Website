@@ -139,16 +139,185 @@
 //     res.status(500).json({ msg: "Server Error", error: err.message });
 //   }
 // };
+// const PersonalDetails = require("../models/personalDetails");
+// const { blobServiceClient, containerName } = require("../config/azureBlob");
+// const fs = require("fs");
+// const path = require("path");
+
+// // ✅ Helper: Upload file to Azure Blob
+// async function uploadToAzure(localFilePath) {
+//   try {
+//     if (!localFilePath || !fs.existsSync(localFilePath)) {
+//       console.error("❌ File not found:", localFilePath);
+//       return null;
+//     }
+
+//     const containerClient = blobServiceClient.getContainerClient(containerName);
+//     await containerClient.createIfNotExists({ access: "container" });
+
+//     const blobName = path.basename(localFilePath);
+//     const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+
+//     await blockBlobClient.uploadFile(localFilePath);
+//     console.log("✅ Uploaded to Azure:", blockBlobClient.url);
+
+//     // Delete local file after upload
+//     fs.unlink(localFilePath, (err) => {
+//       if (err) console.warn("⚠️ Could not delete local file:", err.message);
+//     });
+
+//     return blockBlobClient.url;
+//   } catch (err) {
+//     console.error("❌ Azure upload failed:", err.message);
+//     return null;
+//   }
+// }
+
+// // ✅ Save or Update Personal Details
+// exports.savePersonalDetails = async (req, res) => {
+//   try {
+//     const {
+//       employee,
+//       fatherName,
+//       motherName,
+//       gender,
+//       bloodGroup,
+//       currentAddress,
+//       permanentAddress,
+//       landmark,
+//       pincode,
+//       village,
+//       state,
+//       emergencyContactNumber,
+//       nominee1,
+//       nominee2,
+//       adharNumber,
+//       panNumber,
+//     } = req.body;
+
+//     if (!employee) {
+//       return res.status(400).json({ msg: "Employee ID is required" });
+//     }
+
+//     console.log("📦 Uploaded Files:", req.files);
+
+//     // ✅ Helper to extract local path
+//     const getFilePath = (fieldName) => {
+//       const file = req.files?.[fieldName]?.[0];
+//       return file ? path.resolve(file.path) : null;
+//     };
+
+//     // ✅ Upload each file to Azure (if exists)
+//     const adharUrl = await uploadToAzure(getFilePath("adharFile"));
+//     const panUrl = await uploadToAzure(getFilePath("panFile"));
+//     const marriageUrl = await uploadToAzure(getFilePath("marriageCertificate"));
+//     const photoUrl = await uploadToAzure(getFilePath("empPhoto"));
+
+//     const existing = await PersonalDetails.findOne({ employee });
+
+//     if (existing) {
+//       const updated = await PersonalDetails.findOneAndUpdate(
+//         { employee },
+//         {
+//           fatherName,
+//           motherName,
+//           gender,
+//           bloodGroup,
+//           currentAddress,
+//           permanentAddress,
+//           landmark,
+//           pincode,
+//           village,
+//           state,
+//           emergencyContactNumber,
+//           nominee1,
+//           nominee2,
+//           adharNumber,
+//           adharFile: adharUrl || existing.adharFile,
+//           panNumber,
+//           panFile: panUrl || existing.panFile,
+//           marriageCertificate: marriageUrl || existing.marriageCertificate,
+//           empPhoto: photoUrl || existing.empPhoto,
+//         },
+//         { new: true }
+//       );
+
+//       return res.status(200).json({
+//         msg: "✅ Personal details updated successfully",
+//         data: updated,
+//       });
+//     }
+
+//     // Create new record
+//     const personalDetails = new PersonalDetails({
+//       employee,
+//       fatherName,
+//       motherName,
+//       gender,
+//       bloodGroup,
+//       currentAddress,
+//       permanentAddress,
+//       landmark,
+//       pincode,
+//       village,
+//       state,
+//       emergencyContactNumber,
+//       nominee1,
+//       nominee2,
+//       adharNumber,
+//       adharFile: adharUrl,
+//       panNumber,
+//       panFile: panUrl,
+//       marriageCertificate: marriageUrl,
+//       empPhoto: photoUrl,
+//     });
+
+//     await personalDetails.save();
+
+//     res.status(201).json({
+//       msg: "✅ Personal details saved successfully",
+//       data: personalDetails,
+//     });
+//   } catch (err) {
+//     console.error("❌ Error saving personal details:", err);
+//     res.status(500).json({ msg: "Server Error", error: err.message });
+//   }
+// };
+
+// // 📋 Fetch Personal Details by Employee ID
+// //const PersonalDetails = require("../models/personalDetails");
+
+// // 🟢 Get all
+// exports.getAllPersonalDetails = async (req, res) => {
+//   try {
+//     const details = await PersonalDetails.find();
+//     res.json(details);
+//   } catch (err) {
+//     res.status(500).json({ msg: "Error fetching personal details" });
+//   }
+// };
+
+// // 🟢 Get by employeeId
+// exports.getPersonalDetails = async (req, res) => {
+//   try {
+//     const details = await PersonalDetails.findOne({ empId: req.params.employeeId }); // 👈 match your schema field
+//     if (!details)
+//       return res.status(404).json({ msg: "Personal details not found" });
+//     res.json(details);
+//   } catch (err) {
+//     res.status(500).json({ msg: "Error fetching personal details" });
+//   }
+// };
 const PersonalDetails = require("../models/personalDetails");
 const { blobServiceClient, containerName } = require("../config/azureBlob");
 const fs = require("fs");
 const path = require("path");
 
-// ✅ Helper: Upload file to Azure Blob
+// 🔹 Upload a file to Azure Blob and return the URL
 async function uploadToAzure(localFilePath) {
   try {
     if (!localFilePath || !fs.existsSync(localFilePath)) {
-      console.error("❌ File not found:", localFilePath);
+      console.warn("⚠️ File not found:", localFilePath);
       return null;
     }
 
@@ -157,13 +326,12 @@ async function uploadToAzure(localFilePath) {
 
     const blobName = path.basename(localFilePath);
     const blockBlobClient = containerClient.getBlockBlobClient(blobName);
-
     await blockBlobClient.uploadFile(localFilePath);
+
     console.log("✅ Uploaded to Azure:", blockBlobClient.url);
 
-    // Delete local file after upload
     fs.unlink(localFilePath, (err) => {
-      if (err) console.warn("⚠️ Could not delete local file:", err.message);
+      if (err) console.warn("⚠️ Failed to delete local file:", err.message);
     });
 
     return blockBlobClient.url;
@@ -173,71 +341,84 @@ async function uploadToAzure(localFilePath) {
   }
 }
 
-// ✅ Save or Update Personal Details
+// 🔹 Save or Update Personal Details
 exports.savePersonalDetails = async (req, res) => {
   try {
+    console.log("📥 Incoming Body:", req.body);
+
+    // Extract all body fields
     const {
-      employee,
+      firstName,
+      middleName,
+      lastName,
       fatherName,
       motherName,
+      email,
+      phone,
+      alternativePhone,
       gender,
       bloodGroup,
       currentAddress,
+      sameAddress,
       permanentAddress,
       landmark,
       pincode,
       village,
       state,
-      emergencyContactNumber,
+      emergencyNumber,
       nominee1,
       nominee2,
-      adharNumber,
+      aadharNumber,
       panNumber,
+      isMarried,
     } = req.body;
 
-    if (!employee) {
-      return res.status(400).json({ msg: "Employee ID is required" });
-    }
-
-    console.log("📦 Uploaded Files:", req.files);
-
-    // ✅ Helper to extract local path
-    const getFilePath = (fieldName) => {
-      const file = req.files?.[fieldName]?.[0];
+    // Helper for local file paths
+    const getFilePath = (field) => {
+      const file = req.files?.[field]?.[0];
       return file ? path.resolve(file.path) : null;
     };
 
-    // ✅ Upload each file to Azure (if exists)
-    const adharUrl = await uploadToAzure(getFilePath("adharFile"));
-    const panUrl = await uploadToAzure(getFilePath("panFile"));
+    // Upload files to Azure
+    const photoUrl = await uploadToAzure(getFilePath("photo"));
+    const aadharUrl = await uploadToAzure(getFilePath("aadharUpload"));
+    const panUrl = await uploadToAzure(getFilePath("panUpload"));
     const marriageUrl = await uploadToAzure(getFilePath("marriageCertificate"));
-    const photoUrl = await uploadToAzure(getFilePath("empPhoto"));
 
-    const existing = await PersonalDetails.findOne({ employee });
+    // ✅ Find by email (assuming unique per employee)
+    const existing = await PersonalDetails.findOne({ email });
 
     if (existing) {
       const updated = await PersonalDetails.findOneAndUpdate(
-        { employee },
+        { email },
         {
+          firstName,
+          middleName,
+          lastName,
           fatherName,
           motherName,
+          email,
+          phone,
+          alternativePhone,
           gender,
           bloodGroup,
           currentAddress,
+          sameAddress,
           permanentAddress,
           landmark,
           pincode,
           village,
           state,
-          emergencyContactNumber,
+          emergencyNumber,
           nominee1,
           nominee2,
-          adharNumber,
-          adharFile: adharUrl || existing.adharFile,
+          aadharNumber,
           panNumber,
-          panFile: panUrl || existing.panFile,
+          isMarried,
+          photo: photoUrl || existing.photo,
+          aadharUpload: aadharUrl || existing.aadharUpload,
+          panUpload: panUrl || existing.panUpload,
           marriageCertificate: marriageUrl || existing.marriageCertificate,
-          empPhoto: photoUrl || existing.empPhoto,
         },
         { new: true }
       );
@@ -248,28 +429,35 @@ exports.savePersonalDetails = async (req, res) => {
       });
     }
 
-    // Create new record
+    // ✅ Create a new record
     const personalDetails = new PersonalDetails({
-      employee,
+      firstName,
+      middleName,
+      lastName,
       fatherName,
       motherName,
+      email,
+      phone,
+      alternativePhone,
       gender,
       bloodGroup,
       currentAddress,
+      sameAddress,
       permanentAddress,
       landmark,
       pincode,
       village,
       state,
-      emergencyContactNumber,
+      emergencyNumber,
       nominee1,
       nominee2,
-      adharNumber,
-      adharFile: adharUrl,
+      aadharNumber,
+      aadharUpload: aadharUrl,
       panNumber,
-      panFile: panUrl,
+      panUpload: panUrl,
+      isMarried,
       marriageCertificate: marriageUrl,
-      empPhoto: photoUrl,
+      photo: photoUrl,
     });
 
     await personalDetails.save();
@@ -284,10 +472,7 @@ exports.savePersonalDetails = async (req, res) => {
   }
 };
 
-// 📋 Fetch Personal Details by Employee ID
-//const PersonalDetails = require("../models/personalDetails");
-
-// 🟢 Get all
+// 🔹 Get all Personal Details
 exports.getAllPersonalDetails = async (req, res) => {
   try {
     const details = await PersonalDetails.find();
@@ -297,10 +482,10 @@ exports.getAllPersonalDetails = async (req, res) => {
   }
 };
 
-// 🟢 Get by employeeId
+// 🔹 Get by email (or change to _id if needed)
 exports.getPersonalDetails = async (req, res) => {
   try {
-    const details = await PersonalDetails.findOne({ empId: req.params.employeeId }); // 👈 match your schema field
+    const details = await PersonalDetails.findOne({ email: req.params.email });
     if (!details)
       return res.status(404).json({ msg: "Personal details not found" });
     res.json(details);
