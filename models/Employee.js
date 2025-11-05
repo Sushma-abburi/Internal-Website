@@ -20,6 +20,9 @@ const employeeSchema = new mongoose.Schema({
     enum: ["employee", "admin"],
     default: "employee",
   },
+  resetToken: { type: String },
+resetTokenExpiry: { type: Date }
+
 });
 
 // 🔐 Password encryption
