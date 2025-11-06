@@ -30,8 +30,22 @@ async function uploadToAzure(fileBuffer, originalname, mimetype) {
 
 exports.savePersonalDetails = async (req, res) => {
   try {
-    console.log("📥 Incoming body:", req.body);
     const body = req.body;
+
+    // ✅ Convert isMarried properly (form-data sends strings)
+    body.isMarried = body.isMarried === "true" || body.isMarried === true;
+
+    // ✅ FIX: Remove invalid empty marriage certificate value
+    if (!body.isMarried) {
+      delete body.marriageCertificate;
+    } else {
+      if (!req.files?.marriageCertificate) {
+        return res.status(400).json({
+          msg: "Marriage certificate is required because employee is married",
+        });
+      }
+    }
+    
 
     const getFileObj = async (field) => {
       if (!req.files?.[field]) return null;

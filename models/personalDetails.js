@@ -56,7 +56,13 @@ const personalDetailsSchema = new mongoose.Schema(
 
     // --- Marriage Info ---
     isMarried: { type: Boolean, default: false },
-    marriageCertificate: { type: fileSub }, // optional file URL or path
+    marriageCertificate: {
+      type: fileSub,
+      required: function () {
+        // Required only if the employee is married
+        return this.isMarried === true;
+      },
+    },
 
     // --- Metadata ---
     createdAt: { type: Date, default: Date.now },

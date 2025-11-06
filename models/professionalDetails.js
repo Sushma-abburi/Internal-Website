@@ -39,7 +39,7 @@ const experienceSchema = new Schema({
 
 // Main Professional schema
 const professionalDetailsSchema = new Schema({
-  employeeId: { type: String, required: true, unique: true },
+  employeeId: { type: String, required: true,  },
   dateOfJoining: { type: Date, required: true },
   role: { type: String, required: true },
   department: { type: String, required: true },
