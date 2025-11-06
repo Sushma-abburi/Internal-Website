@@ -105,6 +105,7 @@ exports.getPersonalDetails = async (req, res) => {
   try {
     const { email } = req.params;
     const record = await PersonalDetails.findOne({ email });
+    console.log("personal")
 
     if (!record) {
       return res.status(404).json({ msg: "❌ Personal details not found" });
