@@ -41,7 +41,7 @@ app.use("/api/professional", professionalRoutes);
 app.use("/api/leaves",leaveRoutes);
 app.use("/api/timesheet", timesheetRoutes);
 app.use("/api/tasks", taskRoutes);
-console.log("serevr");
+//onsole.log("serevr");
 // ✅ Default test route
 app.get("/", (req, res) => res.send("Server running OK 🚀"));
 
