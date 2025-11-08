@@ -21,6 +21,15 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.19.2",
     "multer": "^2.0.2",
-    "nodemailer": "^7.0.10"
-  }
+    "nodemailer": "^7.0.10",
+    "path": "^0.12.7"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vaishnavi2-3/Internal-Website.git"
+  },
+  "bugs": {
+    "url": "https://github.com/vaishnavi2-3/Internal-Website/issues"
+  },
+  "homepage": "https://github.com/vaishnavi2-3/Internal-Website#readme"
 }
