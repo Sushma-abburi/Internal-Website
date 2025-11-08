@@ -5,18 +5,18 @@ const connectDB = require("./config/db");
 const path=require('path');
 const fs=require('fs');
 const { BlobServiceClient } = require("@azure/storage-blob");
-const cron = require("node-cron");
-const axios = require("axios");
+// const cron = require("node-cron");
+// const axios = require("axios");
 
 // 🕒 Every 10 minutes, ping your own API to prevent sleep
-cron.schedule("*/10 * * * *", async () => {
-  try {
-    const response = await axios.get("https://your-api-domain.com/health");
-    console.log("✅ API pinged successfully:", response.status);
-  } catch (err) {
-    console.error("⚠️ API ping failed:", err.message);
-  }
-});
+// cron.schedule("*/10 * * * *", async () => {
+//   try {
+//     const response = await axios.get("https://your-api-domain.com/health");
+//     console.log("✅ API pinged successfully:", response.status);
+//   } catch (err) {
+//     console.error("⚠️ API ping failed:", err.message);
+//   }
+// });
 
 
 // ✅ Import routes
