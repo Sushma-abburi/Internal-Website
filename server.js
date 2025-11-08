@@ -15,7 +15,7 @@ const professionalRoutes = require("./routes/professionalRoutes");
 const leaveRoutes=require('./routes/leaveRoutes');
 const timesheetRoutes = require("./routes/timesheetRoutes");
 const taskRoutes = require("./routes/taskRoutes");
-
+const professionalHrRoutes = require("./routes/professionalHrRoutes");
 
 // serve uploaded files statically
 //app.use("/uploads", express.static(path.join(__dirname, "uploads")));
@@ -41,6 +41,11 @@ app.use("/api/professional", professionalRoutes);
 app.use("/api/leaves",leaveRoutes);
 app.use("/api/timesheet", timesheetRoutes);
 app.use("/api/tasks", taskRoutes);
+
+//
+
+app.use("/api/professionalHr", professionalHrRoutes);
+
 console.log("serevr");
 // ✅ Default test route
 app.get("/", (req, res) => res.send("Server running OK 🚀"));
