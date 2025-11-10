@@ -28,7 +28,7 @@ const leaveRoutes=require('./routes/leaveRoutes');
 const timesheetRoutes = require("./routes/timesheetRoutes");
 const taskRoutes = require("./routes/taskRoutes");
 const finalRoutes = require("./routes/finalRoutes"); // <-- your employee routes file
-
+const professionalHrRoutes = require("./routes/professionalHrRoutes");
 
 
 // serve uploaded files statically
@@ -56,7 +56,7 @@ app.use("/api/leaves",leaveRoutes);
 app.use("/api/timesheet", timesheetRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api", finalRoutes); 
-
+app.use("/api/professionalHr", professionalHrRoutes); 
 //onsole.log("serevr");
 // ✅ Default test route
 app.get("/", (req, res) => res.send("Server running OK 🚀"));

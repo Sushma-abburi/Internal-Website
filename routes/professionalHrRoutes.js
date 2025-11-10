@@ -7,7 +7,7 @@ const {
 } = require("../controllers/professionalHrController");
 
 // ➤ POST
-router.post("/", createProfessionalHr);
+router.post("/save", createProfessionalHr);
 
 // ➤ GET
 router.get("/", getAllProfessionalHr);
