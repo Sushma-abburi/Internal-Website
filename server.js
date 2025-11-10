@@ -5,6 +5,13 @@ const connectDB = require("./config/db");
 const path=require('path');
 const fs=require('fs');
 const { BlobServiceClient } = require("@azure/storage-blob");
+const cron = require("node-cron");
+
+// 🕒 Run every minute
+// cron.schedule("* * * * *", () => {
+//   console.log("⏰ Cron Job Running Every Minute!");
+// });
+
 
 // ✅ Import routes
 const personalDetailsRoutes = require("./routes/personalDetailsRoutes");
@@ -14,7 +21,11 @@ const professionalRoutes = require("./routes/professionalRoutes");
 const leaveRoutes=require('./routes/leaveRoutes');
 const timesheetRoutes = require("./routes/timesheetRoutes");
 const taskRoutes = require("./routes/taskRoutes");
+const finalRoutes = require("./routes/finalRoutes"); // <-- your employee routes file
 const professionalHrRoutes = require("./routes/professionalHrRoutes");
+const holidayRoutes = require("./routes/holidayRoutes");
+
+
 
 // serve uploaded files statically
 //app.use("/uploads", express.static(path.join(__dirname, "uploads")));
@@ -40,7 +51,9 @@ app.use("/api/professional", professionalRoutes);
 app.use("/api/leaves",leaveRoutes);
 app.use("/api/timesheet", timesheetRoutes);
 app.use("/api/tasks", taskRoutes);
-app.use("/api/professionalHr", professionalHrRoutes);
+app.use("/api", finalRoutes); 
+app.use("/api/professionalHr", professionalHrRoutes); 
+app.use("/api/holidays", holidayRoutes);
 
 //console.log("serevr");
 //onsole.log("serevr");

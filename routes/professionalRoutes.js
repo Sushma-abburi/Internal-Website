@@ -5,6 +5,7 @@ const path = require("path");
 // console.log("🔥 Professional route loaded");
 
 const {
+  
   saveProfessionalDetails,
   getAllProfessionalDetails,
   getProfessionalDetailsByEmpId,
