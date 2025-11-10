@@ -1,10 +1,10 @@
 const mongoose = require("mongoose");
 
 const professionalHrSchema = new mongoose.Schema({
-  employeeId: {
-    type: Number,
-    ref: "ProfessionalDetails", // Assuming Personal schema holds employee personal details
-    required: true,
+    employeeId: {
+      type: String, // or Number if you store 121 as number
+      required: true,
+      trim: true,
   },
   managerName: {
     type: String,
