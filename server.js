@@ -60,6 +60,7 @@ app.use("/api/holidays", holidayRoutes);
 app.use("/api", mergeRoutes);
 
 
+//console.log("serevr");
 //onsole.log("serevr");
 // ✅ Default test route
 app.get("/", (req, res) => res.send("Server running OK 🚀"));

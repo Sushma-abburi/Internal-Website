@@ -14,5 +14,9 @@ router.get("/", getAllProfessionalHr);
 
 // ➤ PUT (for HR updates)
 router.put("/:id", updateProfessionalHr);
+router.get("/test", (req, res) => {
+  res.send("✅ HR Route Working Properly");
+});
+
 
 module.exports = router;
