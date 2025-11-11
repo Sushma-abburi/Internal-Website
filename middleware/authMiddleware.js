@@ -16,4 +16,30 @@ const authMiddleware = async (req, res, next) => {
   }
 };
 
-module.exports = authMiddleware;
+
+const verifyToken = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ msg: "No token provided, authorization denied." });
+    }
+
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || "supersecretkey");
+
+    const employee = await Employee.findOne({ email: decoded.email });
+    if (!employee) {
+      return res.status(404).json({ msg: "Employee not found." });
+    }
+
+    req.user = employee;
+    next();
+  } catch (error) {
+    console.error("❌ Auth Middleware Error:", error);
+    res.status(401).json({ msg: "Invalid or expired token" });
+  }
+};
+
+module.exports = {authMiddleware, verifyToken };
+
+// module.exports = authMiddleware;

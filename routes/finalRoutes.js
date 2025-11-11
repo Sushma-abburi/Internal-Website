@@ -1,15 +1,14 @@
 const express = require("express");
 const router = express.Router();
-
 const {
-  getFullEmployeeDetailsByEmpId,
-  getAllFullEmployeeDetails,
+  getFullDetailsByEmail,
+  getAllEmployeesFullDetails,
 } = require("../controllers/finalController");
 
-// ✅ Get all employees with merged details
-router.get("/employees", getAllFullEmployeeDetails);
+// ✅ Get one employee by login email
+router.get("/details/:email", getFullDetailsByEmail);
 
-// ✅ Get single employee full details by EmpId
-router.get("/employee/:employeeId", getFullEmployeeDetailsByEmpId);
+// ✅ Get all employees full details
+router.get("/details", getAllEmployeesFullDetails);
 
 module.exports = router;

@@ -1,96 +1,102 @@
 const Employee = require("../models/Employee");
 const PersonalDetails = require("../models/personalDetails");
-const EducationDetails = require("../models/educationDetails");
+const Education = require("../models/educationDetails");
 const ProfessionalDetails = require("../models/professionalDetails");
 
-// 🧩 Get single full employee details
-exports.getFullEmployeeDetailsByEmpId = async (req, res) => {
+exports.getFullDetailsByEmail = async (req, res) => {
   try {
-    const { empId } = req.params;
-    console.log("🔍 Fetching full details for:", empId);
+    const { email } = req.params;
+    console.log("📩 Fetching details for:", email);
 
-    const employee = await Employee.findOne({
-      $or: [
-        { empId },
-        { employeeId: empId },
-        { employeeID: empId },
-        { EmployeeId: empId },
-      ],
-    }).select("-password");
-
+    const employee = await Employee.findOne({ email: email.toLowerCase().trim() });
     if (!employee) {
-      return res.status(404).json({ msg: "Employee not found" });
+      return res.status(404).json({ msg: "Employee not found." });
     }
 
-    const { email, name, phone } = employee;
+    console.log("✅ Employee found:");
+    console.log(employee);
 
-    const [personalDetails, educationDetails, professionalDetails] =
-      await Promise.all([
-        PersonalDetails.findOne({
-          $or: [{ email }, { empName: name }, { phoneNumber: phone }].filter(Boolean),
-        }),
-        EducationDetails.findOne({
-          $or: [{ email }, { empName: name }].filter(Boolean),
-        }),
-        ProfessionalDetails.findOne({
-          $or: [{ email }, { empName: name }].filter(Boolean),
-        }),
-      ]);
+    // Extract both possible IDs
+    const employeeId = employee.employeeId;
+    const empId = employee.empId;
+
+    console.log("🆔 employeeId:", employeeId);
+    console.log("🆔 empId:", empId);
+
+    // 🔍 Print what exists in other collections
+    const personalDocs = await PersonalDetails.find({});
+    const educationDocs = await Education.find({});
+    const professionalDocs = await ProfessionalDetails.find({});
+
+    console.log("📚 Personal Details employeeIds:", personalDocs.map(p => p.employeeId));
+    console.log("🎓 Education employeeIds:", educationDocs.map(e => e.employeeId));
+    console.log("💼 Professional employeeIds:", professionalDocs.map(p => p.employeeId));
+
+    // Try to match
+    const matchIds = [employeeId, empId, employeeId?.replace("EMP", "EMP-"), employeeId?.replace("EMP-", "EMP")].filter(Boolean);
+    console.log("🔎 Trying matchIds:", matchIds);
+
+    const [personal, education, professional] = await Promise.all([
+      PersonalDetails.findOne({ employeeId: { $in: matchIds } }),
+      Education.findOne({ employeeId: { $in: matchIds } }),
+      ProfessionalDetails.findOne({ employeeId: { $in: matchIds } }),
+    ]);
+
+    console.log("✅ Matched Personal:", personal);
+    console.log("✅ Matched Education:", education);
+    console.log("✅ Matched Professional:", professional);
 
     res.status(200).json({
-      msg: "Full employee details fetched successfully",
+      msg: "✅ Full employee details fetched successfully.",
       data: {
         employee,
-        personalDetails: personalDetails || "No personal details found",
-        educationDetails: educationDetails || "No education details found",
-        professionalDetails: professionalDetails || "No professional details found",
+        personalDetails: personal || {},
+        educationDetails: education || {},
+        professionalDetails: professional || {},
       },
     });
-  } catch (err) {
-    console.error("❌ Error fetching full employee details:", err);
-    res.status(500).json({ msg: "Server Error", error: err.message });
+  } catch (error) {
+    console.error("❌ Error fetching full employee details:", error);
+    res.status(500).json({ msg: "Server Error", error: error.message });
   }
 };
 
-// 🧩 Get all employees with combined details
-exports.getAllFullEmployeeDetails = async (req, res) => {
+// 🧾 Get full details for ALL employees
+exports.getAllEmployeesFullDetails = async (req, res) => {
   try {
-    const employees = await Employee.find().select("-password");
-    if (!employees.length) {
-      return res.status(404).json({ msg: "No employees found" });
-    }
+    console.log("📦 Fetching all employee details...");
 
-    // Combine each employee with their other details
-    const fullData = await Promise.all(
+    // 1️⃣ Get all employees
+    const employees = await Employee.find();
+
+    // 2️⃣ Fetch related data for each employee
+    const allDetails = await Promise.all(
       employees.map(async (emp) => {
-        const { empId, email, name, phone } = emp;
+        const empId = emp.employeeId;
+
         const [personal, education, professional] = await Promise.all([
-          PersonalDetails.findOne({
-            $or: [{ email }, { empName: name }, { phoneNumber: phone }].filter(Boolean),
-          }),
-          EducationDetails.findOne({
-            $or: [{ email }, { empName: name }].filter(Boolean),
-          }),
-          ProfessionalDetails.findOne({
-            $or: [{ email }, { empName: name }].filter(Boolean),
-          }),
+          PersonalDetails.findOne({ employeeId: empId }),
+          Education.findOne({ employeeId: empId }),
+          ProfessionalDetails.findOne({ employeeId: empId }),
         ]);
+
         return {
           employee: emp,
-          personalDetails: personal || null,
-          educationDetails: education || null,
-          professionalDetails: professional || null,
+          personalDetails: personal || {},
+          educationDetails: education || {},
+          professionalDetails: professional || {},
         };
       })
     );
 
+    // 3️⃣ Respond
     res.status(200).json({
-      msg: "All employee full details fetched successfully",
-      count: fullData.length,
-      data: fullData,
+      msg: "✅ All employee full details fetched successfully.",
+      count: allDetails.length,
+      data: allDetails,
     });
-  } catch (err) {
-    console.error("❌ Error fetching all full employee details:", err);
-    res.status(500).json({ msg: "Server Error", error: err.message });
+  } catch (error) {
+    console.error("❌ Error fetching all employee details:", error);
+    res.status(500).json({ msg: "Server Error", error: error.message });
   }
 };

@@ -130,4 +130,3 @@ console.log(record)
     res.status(500).json({ msg: "Server Error", error: error.message });
   }
 };
-// console.log("🔥 Controller LOADED");

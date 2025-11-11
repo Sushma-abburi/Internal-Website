@@ -10,6 +10,11 @@ const fileSub = new Schema({
 
 const personalDetailsSchema = new mongoose.Schema(
   {
+   employeeId: {
+   type: String,
+   required: true,
+   },
+
     // --- Basic Info ---
     firstName: { type: String, required: true },
     middleName: { type: String },

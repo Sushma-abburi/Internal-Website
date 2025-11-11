@@ -24,6 +24,7 @@ const taskRoutes = require("./routes/taskRoutes");
 const finalRoutes = require("./routes/finalRoutes"); // <-- your employee routes file
 const professionalHrRoutes = require("./routes/professionalHrRoutes");
 const holidayRoutes = require("./routes/holidayRoutes");
+const mergeRoutes = require("./routes/mergeRoutes");
 
 
 
@@ -36,6 +37,8 @@ connectDB();
 
 const app = express();
 app.use(express.json());
+app.use(express.urlencoded({ extended: true })); // For form-data support
+
 app.use(cors());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 // if (!fs.existsSync(uploadDir)) {
@@ -51,9 +54,11 @@ app.use("/api/professional", professionalRoutes);
 app.use("/api/leaves",leaveRoutes);
 app.use("/api/timesheet", timesheetRoutes);
 app.use("/api/tasks", taskRoutes);
-app.use("/api", finalRoutes); 
+app.use("/api/employee", finalRoutes); 
 app.use("/api/professionalHr", professionalHrRoutes); 
 app.use("/api/holidays", holidayRoutes);
+app.use("/api", mergeRoutes);
+
 
 //onsole.log("serevr");
 // ✅ Default test route
