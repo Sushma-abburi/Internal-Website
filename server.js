@@ -26,6 +26,8 @@ const professionalHrRoutes = require("./routes/professionalHrRoutes");
 const holidayRoutes = require("./routes/holidayRoutes");
 const mergeRoutes = require("./routes/mergeRoutes");
 const projectRoutes = require("./routes/projectTimelineRoutes");
+const trainingRoutes = require("./routes/trainingRoutes");
+const certificationRoutes = require("./routes/certificationRoutes");
 
 
 
@@ -60,6 +62,8 @@ app.use("/api/professionalHr", professionalHrRoutes);
 app.use("/api/holidays", holidayRoutes);
 app.use("/api", mergeRoutes);
 app.use("/api/projects", projectRoutes);
+app.use("/api/trainings", trainingRoutes);
+app.use("/api/certifications", certificationRoutes);
 
 
 //console.log("serevr");
