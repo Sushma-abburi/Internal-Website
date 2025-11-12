@@ -81,7 +81,7 @@
 //     res.status(500).json({ message: "Server error" });
 //   }
 // };
-const TimeEntry = require("../models/timeEntry");
+const TimeEntry = require("../models/TimeEntry");
 const Employee = require("../models/Employee");
 
 // ✅ Create a new timesheet entry for logged-in employee
