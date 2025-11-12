@@ -2,7 +2,13 @@ const mongoose = require("mongoose");
 
 const timeEntrySchema = new mongoose.Schema(
   {
-    date: { type: Date, required: true, unique: true },
+    employeeEmail: {
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true,
+    },
+    date: { type: Date, required: true },
     category: { type: String, required: true },
     projectName: { type: String, required: true },
     projectCode: { type: String, required: true },
