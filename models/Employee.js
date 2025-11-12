@@ -13,7 +13,7 @@ const employeeSchema = new mongoose.Schema({
   lastName: { type: String, required: true },
   dateOfBirth: { type: Date, required: true },
 email: { 
-  type: String, 
+  type: String,
   required: true, 
   unique: true, 
   lowercase: true,  // 👈 automatically convert to lowercase

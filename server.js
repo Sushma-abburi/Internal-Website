@@ -25,6 +25,7 @@ const finalRoutes = require("./routes/finalRoutes"); // <-- your employee routes
 const professionalHrRoutes = require("./routes/professionalHrRoutes");
 const holidayRoutes = require("./routes/holidayRoutes");
 const mergeRoutes = require("./routes/mergeRoutes");
+const projectRoutes = require("./routes/projectTimelineRoutes");
 
 
 
@@ -58,6 +59,7 @@ app.use("/api/employee", finalRoutes);
 app.use("/api/professionalHr", professionalHrRoutes); 
 app.use("/api/holidays", holidayRoutes);
 app.use("/api", mergeRoutes);
+app.use("/api/projects", projectRoutes);
 
 
 //console.log("serevr");
