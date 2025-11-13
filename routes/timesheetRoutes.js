@@ -18,6 +18,10 @@ const router = express.Router();
 const {
   createTimeEntry,
   getMyTimeEntries,
+  updateTimeEntryByEmail,
+  patchTimeEntryByEmail
+,
+
 } = require("../controllers/timesheetController");
 const { verifyToken } = require("../middleware/authMiddleware");
 
@@ -26,5 +30,10 @@ router.post("/", verifyToken, createTimeEntry);
 
 // ✅ Get logged-in employee’s timesheet entries
 router.get("/", verifyToken, getMyTimeEntries);
+router.put("/update", verifyToken, updateTimeEntryByEmail);
+
+// 🔧 Update PARTIAL entry (PATCH)
+router.patch("/update", verifyToken, patchTimeEntryByEmail);
+
 
 module.exports = router;

@@ -24,7 +24,9 @@
 const express = require("express");
 const router = express.Router();
 const multer = require("multer");
-const { createLeave, getLeaves } = require("../controllers/leaveController");
+const { createLeave, updateLeaveStatus,
+  getLeaveSummary,
+ } = require("../controllers/leaveController");
 
 // ✅ Memory storage (Vercel-compatible)
 const storage = multer.memoryStorage();
@@ -32,6 +34,8 @@ const upload = multer({ storage });
 
 // ✅ Routes
 router.post("/create", upload.single("file"), createLeave);
-router.get("/", getLeaves);
+router.put("/:leaveId/status", updateLeaveStatus);
+router.get("/summary/:employeeId", getLeaveSummary);
+
 
 module.exports = router;

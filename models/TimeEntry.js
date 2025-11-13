@@ -12,6 +12,7 @@ const timeEntrySchema = new mongoose.Schema(
     category: { type: String, required: true },
     projectName: { type: String, required: true },
     projectCode: { type: String, required: true },
+    
     projectType: { type: String, required: true },
     hours: { type: Number, required: true },
   },

@@ -146,3 +146,66 @@ exports.getMyTimeEntries = async (req, res) => {
     });
   }
 };
+// ✅ Update FULL timesheet entry (PUT)
+exports.updateTimeEntryByEmail = async (req, res) => {
+  try {
+    const employeeEmail = req.user.email;
+    const { date } = req.body;   // date to update
+
+    if (!date) {
+      return res.status(400).json({ msg: "Date is required to update entry" });
+    }
+
+    const updatedEntry = await TimeEntry.findOneAndUpdate(
+      { employeeEmail, date },          // filter
+      { ...req.body },                  // update all fields
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedEntry) {
+      return res.status(404).json({ msg: "No timesheet found for this date." });
+    }
+
+    res.status(200).json({
+      msg: "Timesheet updated successfully",
+      updatedEntry,
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      msg: "Error updating timesheet",
+      error: error.message,
+    });
+  }
+};
+exports.patchTimeEntryByEmail = async (req, res) => {
+  try {
+    const employeeEmail = req.user.email;
+    const { date } = req.body;
+
+    if (!date) {
+      return res.status(400).json({ msg: "Date is required to update entry" });
+    }
+
+    const updatedEntry = await TimeEntry.findOneAndUpdate(
+      { employeeEmail, date },
+      { $set: req.body },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedEntry) {
+      return res.status(404).json({ msg: "Timesheet entry not found." });
+    }
+
+    res.status(200).json({
+      msg: "Timesheet partially updated successfully",
+      updatedEntry,
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      msg: "Error updating timesheet",
+      error: error.message,
+    });
+  }
+};

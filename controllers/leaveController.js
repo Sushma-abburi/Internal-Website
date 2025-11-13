@@ -1,97 +1,148 @@
 const Leave = require("../models/leave");
+const ProfessionalDetails = require("../models/professionalDetails");
 const { blobServiceClient, containerName } = require("../config/azureBlob");
 
 // ✅ Helper: Upload file buffer directly to Azure Blob
 async function uploadToAzure(fileBuffer, originalname) {
-  try {
-    if (!fileBuffer) {
-      console.error("❌ No file buffer found");
-      return null;
-    }
-
-    // Ensure container exists
-    const containerClient = blobServiceClient.getContainerClient(containerName);
-    await containerClient.createIfNotExists({ access: "container" });
-
-    // Create blob name and upload
-    const blobName = Date.now() + "-" + originalname;
-    const blockBlobClient = containerClient.getBlockBlobClient(blobName);
-
-    await blockBlobClient.uploadData(fileBuffer);
-    console.log("✅ Uploaded to Azure:", blockBlobClient.url);
-
-    return blockBlobClient.url;
-  } catch (err) {
-    console.error("❌ Azure upload failed:", err.message);
-    return null;
-  }
+  if (!fileBuffer) return null;
+  const containerClient = blobServiceClient.getContainerClient(containerName);
+  await containerClient.createIfNotExists({ access: "container" });
+  const blobName = Date.now() + "-" + originalname;
+  const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+  await blockBlobClient.uploadData(fileBuffer);
+  return blockBlobClient.url;
 }
 
-// 🟢 Create a new leave
+// 🟢 CREATE LEAVE — auto-calculate daysApplied safely
 exports.createLeave = async (req, res) => {
   try {
-    console.log("📩 Incoming leave data:", req.body);
-    console.log("📎 Uploaded file:", req.file ? req.file.originalname : "No file");
-
     const {
       employeeName,
       employeeId,
       fromDate,
       toDate,
-      daysApplied,
       leaveType,
       customTypes,
       reason,
     } = req.body;
 
-    // ✅ Upload file to Azure if provided
+    if (!employeeId || !fromDate || !toDate || !leaveType) {
+      return res.status(400).json({ msg: "Missing required fields." });
+    }
+
+    // ✅ Calculate leave duration
+    const start = new Date(fromDate);
+    const end = new Date(toDate);
+    const diffDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+
+    // ✅ Get current available casual leaves
+    const leaveBalance = await calculateAvailableCasualLeaves(employeeId);
+    const { earnedLeaves, usedLeaves, remainingLeaves } = leaveBalance;
+
+    if (leaveType === "Casual" && remainingLeaves < diffDays) {
+      return res.status(400).json({
+        msg: `❌ Not enough casual leaves. Available: ${remainingLeaves}, Requested: ${diffDays}`,
+      });
+    }
+
+    // ✅ Upload file if provided
     let file = null;
     if (req.file) {
-      const azureUrl = await uploadToAzure(req.file.buffer, req.file.originalname);
+      const containerClient = blobServiceClient.getContainerClient(containerName);
+      await containerClient.createIfNotExists({ access: "container" });
+      const blobName = Date.now() + "-" + req.file.originalname;
+      const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+      await blockBlobClient.uploadData(req.file.buffer);
       file = {
         filename: req.file.originalname,
+        path: blockBlobClient.url,
         mimetype: req.file.mimetype,
         size: req.file.size,
-        path: azureUrl, // Azure URL
       };
     }
 
-    // ✅ Create new Leave document
+    // ✅ Create Leave Record
     const leave = new Leave({
       employeeName,
       employeeId,
-      fromDate,
-      toDate,
-      daysApplied,
+      fromDate: start,
+      toDate: end,
+      daysApplied: diffDays,
       leaveType,
       customTypes,
       reason,
       file,
+      status: "Sent",
     });
 
     await leave.save();
 
     res.status(201).json({
-      msg: "✅ Leave applied successfully",
+      msg: "✅ Leave applied successfully (Pending HR approval)",
       leave,
+      leaveBalance,
     });
   } catch (error) {
     console.error("❌ Error saving leave:", error);
-    res.status(500).json({
-      msg: "Server error",
-      error: error.message,
-      stack: error.stack, // temporary for debugging
-    });
+    res.status(500).json({ msg: "Server Error", error: error.message });
   }
 };
-
-// 🟢 Get all leaves
-exports.getLeaves = async (req, res) => {
+// 🟢 HR APPROVE OR REJECT LEAVE
+exports.updateLeaveStatus = async (req, res) => {
   try {
-    const leaves = await Leave.find();
-    res.json(leaves);
+    const { leaveId } = req.params;
+    const { status } = req.body;
+
+    const leave = await Leave.findById(leaveId);
+    if (!leave) return res.status(404).json({ msg: "Leave not found" });
+
+    leave.status = status;
+    await leave.save();
+
+    // After approval, recalculate updated balance
+    const leaveBalance = await calculateAvailableCasualLeaves(leave.employeeId);
+
+    res.status(200).json({
+      msg: `✅ Leave ${status} successfully`,
+      leave,
+      leaveBalance,
+    });
   } catch (error) {
-    console.error("❌ Error fetching leaves:", error);
-    res.status(500).json({ msg: "Error fetching leaves" });
+    console.error("❌ Error updating leave:", error);
+    res.status(500).json({ msg: "Server Error", error: error.message });
+  }
+};
+// 🟢 Get Leave Summary from Joining Date
+exports.getLeaveSummary = async (req, res) => {
+  try {
+    const { employeeId } = req.params;
+
+    const professional = await ProfessionalDetails.findOne({ employeeId });
+    if (!professional)
+      return res.status(404).json({ msg: "Professional details not found for this employee." });
+
+    const joiningDate = new Date(professional.dateOfJoining);
+    const today = new Date();
+    const yearsWorked = Math.floor((today - joiningDate) / (1000 * 60 * 60 * 24 * 365));
+    const allowedLeaves = (yearsWorked + 1) * 10;
+
+    const approvedLeaves = await Leave.find({
+      employeeId,
+      status: "Approved",
+      fromDate: { $gte: joiningDate },
+    });
+
+    const usedLeaves = approvedLeaves.reduce((sum, l) => sum + (l.daysApplied || 0), 0);
+
+    res.status(200).json({
+      msg: "✅ Leave summary fetched successfully",
+      joiningDate,
+      allowedLeaves,
+      usedLeaves,
+      remainingLeaves: allowedLeaves - usedLeaves,
+    });
+  } catch (error) {
+    console.error("❌ Error fetching leave summary:", error);
+    res.status(500).json({ msg: "Server Error", error: error.message });
   }
 };
