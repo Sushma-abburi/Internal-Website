@@ -12,12 +12,15 @@
 const express = require("express");
 const router = express.Router();
 
-const { verifyToken } = require("../middleware/authMiddleware");
-const { getMyFullDetails,getFullDetailsByEmail } = require("../controllers/finalController");
+const {
+  getFullDetailsByEmail,
+  getAllEmployeesFullDetails
+} = require("../controllers/finalController");
 
-// GET all employee details
-router.get("/me", verifyToken, getMyFullDetails);
-router.get("/:email", verifyToken, getFullDetailsByEmail);
+// Get one employee full details
+router.get("/:email", getFullDetailsByEmail);
 
+// Get ALL employees full details
+router.get("/", getAllEmployeesFullDetails);
 
 module.exports = router;
