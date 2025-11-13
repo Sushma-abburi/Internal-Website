@@ -10,7 +10,8 @@ const fileSub = new Schema({
 
 const personalDetailsSchema = new mongoose.Schema(
   {
-   
+  officialEmail: { type: String, required: true },   // 👈 from token
+
     // --- Basic Info ---
     firstName: { type: String, required: true },
     middleName: { type: String },

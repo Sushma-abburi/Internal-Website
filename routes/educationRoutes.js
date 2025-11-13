@@ -41,7 +41,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 const {
   saveEducationDetails,
-  getAllEducationDetails,
+  getEducationByOfficialEmail,
   getMyEducationDetails,
 } = require("../controllers/educationController");
 
@@ -62,6 +62,6 @@ router.post(
 router.get("/me", verifyToken, getMyEducationDetails);
 
 // 📌 Get all education records (admin only OR remove admin condition)
-router.get("/", verifyToken, getAllEducationDetails);
+router.get("/", verifyToken, getEducationByOfficialEmail);
 
 module.exports = router;

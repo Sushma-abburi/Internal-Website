@@ -47,45 +47,35 @@ const ProfessionalDetails = require("../models/professionalDetails");
 
 exports.getMyFullDetails = async (req, res) => {
   try {
-    const emailFromToken = req.user.email;  // 👈 Logged-in employee email
+    const officialEmail = req.user.email; // 👈 logged-in email
 
-    // Fetch all details
-    const personal = await PersonalDetails.findOne({ email: emailFromToken });
-    const education = await Education.findOne({ email: emailFromToken });
-    const professional = await ProfessionalDetails.findOne({ email: emailFromToken });
+    const personal = await PersonalDetails.findOne({ officialEmail });
+    const education = await Education.findOne({ officialEmail });
+    const professional = await ProfessionalDetails.findOne({ officialEmail });
 
-    // If NO data found at least one
     if (!personal && !education && !professional) {
       return res.status(404).json({ msg: "No details found for this employee" });
     }
 
     res.status(200).json({
       msg: "✅ All employee details fetched successfully",
-      email: emailFromToken,
+      officialEmail,
       personal,
       education,
       professional,
     });
 
   } catch (error) {
-    console.error("❌ Error fetching full details:", error);
-    res.status(500).json({
-      msg: "Server Error",
-      error: error.message,
-    });
+    res.status(500).json({ msg: "Server Error", error: error.message });
   }
 };
 exports.getFullDetailsByEmail = async (req, res) => {
   try {
-    const { email } = req.params;
+    const { email } = req.params; // 👈 this is official email
 
-    if (!email) {
-      return res.status(400).json({ msg: "Email is required" });
-    }
-
-    const personal = await PersonalDetails.findOne({ email });
-    const education = await Education.findOne({ email });
-    const professional = await ProfessionalDetails.findOne({ email });
+    const personal = await PersonalDetails.findOne({ officialEmail: email });
+    const education = await Education.findOne({ officialEmail: email });
+    const professional = await ProfessionalDetails.findOne({ officialEmail: email });
 
     if (!personal && !education && !professional) {
       return res.status(404).json({ msg: "No details found for this email" });
@@ -93,17 +83,13 @@ exports.getFullDetailsByEmail = async (req, res) => {
 
     res.status(200).json({
       msg: "✅ Employee full details fetched successfully",
-      email,
+      officialEmail: email,
       personal,
       education,
       professional
     });
 
   } catch (error) {
-    console.error("❌ Error fetching details by email:", error);
-    res.status(500).json({
-      msg: "Server Error",
-      error: error.message,
-    });
+    res.status(500).json({ msg: "Server Error", error: error.message });
   }
 };

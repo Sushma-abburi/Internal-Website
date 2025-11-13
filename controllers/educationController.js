@@ -146,11 +146,11 @@ async function uploadToAzure(fileBuffer, originalname, mimetype) {
 // -------------------------
 const saveEducationDetails = async (req, res) => {
   try {
-    const emailFromToken = req.user.email;  // 👈 use token email
+    const officialEmail = req.user.email; // 👈 login email
     const body = req.body;
 
-    // Force email from token
-    body.email = emailFromToken;
+    // Store official email
+    body.officialEmail = officialEmail;
 
     const getFileObj = async (field) => {
       if (!req.files?.[field]) return null;
@@ -171,20 +171,19 @@ const saveEducationDetails = async (req, res) => {
       ...(certificateMTech && { certificateMTech }),
     };
 
-    // ❗ upsert = true → create or update automatically
+    // Upsert using officialEmail
     const updated = await Education.findOneAndUpdate(
-      { email: emailFromToken },
+      { officialEmail },
       educationData,
       { new: true, upsert: true }
     );
 
     res.status(200).json({
-      msg: "✅ Education details saved successfully",
+      msg: "Education details saved successfully",
       data: updated,
     });
 
   } catch (error) {
-    console.error("❌ Error saving education:", error);
     res.status(500).json({ msg: "Server Error", error: error.message });
   }
 };
@@ -194,18 +193,19 @@ const saveEducationDetails = async (req, res) => {
 // -------------------------
 const getMyEducationDetails = async (req, res) => {
   try {
-    const emailFromToken = req.user.email;
+    const officialEmail = req.user.email;
 
-    const record = await Education.findOne({ email: emailFromToken });
+    const record = await Education.findOne({ officialEmail });
 
     if (!record) {
       return res.status(404).json({ msg: "No education details found" });
     }
 
     res.status(200).json({
-      msg: "✅ Education details fetched",
+      msg: "Education details fetched",
       data: record,
     });
+
   } catch (error) {
     res.status(500).json({ msg: "Server Error", error: error.message });
   }
@@ -214,25 +214,28 @@ const getMyEducationDetails = async (req, res) => {
 // -------------------------
 // 📌 GET ALL (Admin)
 // -------------------------
-const getAllEducationDetails = async (req, res) => {
+const getEducationByOfficialEmail = async (req, res) => {
   try {
-    const educationRecords = await Education.find();
+    const { email } = req.params;
+
+    const record = await Education.findOne({ officialEmail: email });
+
+    if (!record) {
+      return res.status(404).json({ msg: "Education details not found" });
+    }
+
     res.status(200).json({
-      success: true,
-      count: educationRecords.length,
-      data: educationRecords,
+      msg: "Education details fetched by official email",
+      data: record,
     });
+
   } catch (error) {
-    console.error("Error fetching education records:", error);
-    res.status(500).json({
-      msg: "Error fetching education records",
-      error: error.message,
-    });
+    res.status(500).json({ msg: "Server Error", error: error.message });
   }
 };
 
 module.exports = {
   saveEducationDetails,
-  getAllEducationDetails,
+  getEducationByOfficialEmail,
   getMyEducationDetails,
 };

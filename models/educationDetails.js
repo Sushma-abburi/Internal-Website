@@ -8,6 +8,8 @@ const fileSub = new Schema({
 });
 
 const educationSchema = new mongoose.Schema({
+officialEmail: { type: String, required: true },  // 👈 only email stored
+
   
   // ---------- 10th Class ----------
   schoolName10: {

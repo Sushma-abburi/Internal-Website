@@ -160,13 +160,11 @@ async function uploadToAzure(file) {
 // -----------------------------------------------------
 exports.saveProfessionalDetails = async (req, res) => {
   try {
-    const emailFromToken = req.user.email;  // 👈 use email from token
+    const officialEmail = req.user.email; // 👈 login token email
     const body = req.body;
 
-    // Force email from token (avoid spoofing)
-    body.email = emailFromToken;
+    body.officialEmail = officialEmail;
 
-    // Parse experiences if sent as string
     let experiences = [];
     if (body.experiences) {
       experiences =
@@ -175,34 +173,31 @@ exports.saveProfessionalDetails = async (req, res) => {
           : body.experiences;
     }
 
-    // Handle files for each experience (relieving + slips)
+    // Upload files for each experience
     for (let i = 0; i < experiences.length; i++) {
       const exp = experiences[i];
 
-      // relieving letter
-      const rel = req.files?.find(
+      const relFile = req.files?.find(
         (f) => f.fieldname === `experiences[${i}][relivingLetter]`
       );
-      exp.relivingLetter = rel ? await uploadToAzure(rel) : null;
+      exp.relivingLetter = relFile ? await uploadToAzure(relFile) : null;
 
-      // salary slips
-      const slips =
+      const slipFiles =
         req.files?.filter(
           (f) => f.fieldname === `experiences[${i}][salarySlips]`
         ) || [];
 
       exp.salarySlips = [];
-      for (const slip of slips) {
-        const up = await uploadToAzure(slip);
-        if (up) exp.salarySlips.push(up);
+      for (const slip of slipFiles) {
+        const uploaded = await uploadToAzure(slip);
+        if (uploaded) exp.salarySlips.push(uploaded);
       }
     }
 
-    // SAVE or UPDATE using email
     const updated = await ProfessionalDetails.findOneAndUpdate(
-      { email: emailFromToken },    // 👈 update by email ONLY
+      { officialEmail },  // 👈 update using token email
       {
-        email: emailFromToken,
+        officialEmail,
         dateOfJoining: body.dateOfJoining,
         role: body.role,
         department: body.department,
@@ -214,11 +209,11 @@ exports.saveProfessionalDetails = async (req, res) => {
     );
 
     res.status(200).json({
-      msg: "✅ Professional details saved successfully",
+      msg: "Professional details saved successfully",
       data: updated,
     });
+
   } catch (err) {
-    console.error("❌ Error saving professional:", err);
     res.status(500).json({ msg: "Server Error", error: err.message });
   }
 };
@@ -228,18 +223,19 @@ exports.saveProfessionalDetails = async (req, res) => {
 // -----------------------------------------------------
 exports.getMyProfessionalDetails = async (req, res) => {
   try {
-    const emailFromToken = req.user.email;
+    const officialEmail = req.user.email;
 
-    const record = await ProfessionalDetails.findOne({ email: emailFromToken });
+    const record = await ProfessionalDetails.findOne({ officialEmail });
 
     if (!record) {
       return res.status(404).json({ msg: "Professional details not found" });
     }
 
     res.status(200).json({
-      msg: "✅ Professional details fetched successfully",
+      msg: "Professional details fetched.",
       data: record,
     });
+
   } catch (err) {
     res.status(500).json({ msg: "Server Error", error: err.message });
   }
@@ -252,16 +248,17 @@ exports.getProfessionalDetailsByEmail = async (req, res) => {
   try {
     const { email } = req.params;
 
-    const record = await ProfessionalDetails.findOne({ email });
+    const record = await ProfessionalDetails.findOne({ officialEmail: email });
 
     if (!record) {
       return res.status(404).json({ msg: "No professional details found" });
     }
 
     res.status(200).json({
-      msg: "✅ Professional details fetched successfully",
+      msg: "Professional details fetched successfully",
       data: record,
     });
+
   } catch (err) {
     res.status(500).json({ msg: "Server Error", error: err.message });
   }
@@ -279,6 +276,7 @@ exports.getAllProfessionalDetails = async (req, res) => {
       count: records.length,
       data: records,
     });
+
   } catch (err) {
     res.status(500).json({ msg: "Server Error", error: err.message });
   }

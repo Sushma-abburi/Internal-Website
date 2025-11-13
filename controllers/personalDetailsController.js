@@ -157,7 +157,8 @@ exports.savePersonalDetails = async (req, res) => {
     const body = req.body;
 
     // Force email into body
-    body.email = emailFromToken;
+body.officialEmail = emailFromToken;  // login email
+// body.email remains personal email (coming from request body)
 
     // Convert isMarried
     body.isMarried = body.isMarried === "true" || body.isMarried === true;
@@ -212,7 +213,7 @@ exports.savePersonalDetails = async (req, res) => {
 // 🌟 Get logged-in employee personal details
 exports.getMyPersonalDetails = async (req, res) => {
   try {
-    const emailFromToken = req.user.email;
+    const officialEmail = req.user.email;  // login token email
 
     const record = await PersonalDetails.findOne({ email: emailFromToken });
 
@@ -251,20 +252,17 @@ exports.getPersonalDetailsByEmail = async (req, res) => {
   try {
     const { email } = req.params;
 
-    if (!email) return res.status(400).json({ msg: "Email is required" });
-
-    const record = await PersonalDetails.findOne({ email });
+    const record = await PersonalDetails.findOne({ officialEmail: email });
 
     if (!record) {
       return res.status(404).json({ msg: "Personal details not found" });
     }
 
     res.status(200).json({
-      msg: "✅ Personal details fetched successfully",
+      msg: "Personal details fetched successfully",
       data: record,
     });
   } catch (err) {
-    console.error("❌ Error fetching personal details by email:", err);
     res.status(500).json({ msg: "Server Error", error: err.message });
   }
 };
