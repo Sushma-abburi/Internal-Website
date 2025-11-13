@@ -8,11 +8,7 @@ const fileSub = new Schema({
 });
 
 const educationSchema = new mongoose.Schema({
-  employeeId: {
-  type: String,
-  required: true,
-},
-
+  
   // ---------- 10th Class ----------
   schoolName10: {
     type: String,

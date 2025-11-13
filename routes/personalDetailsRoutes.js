@@ -5,8 +5,13 @@ const fs = require("fs");
 const {
   savePersonalDetails,
   getAllPersonalDetails,
-  getPersonalDetails,
+  getPersonalDetailsByEmail,
+  getMyPersonalDetails
 } = require("../controllers/personalDetailsController");
+
+const { verifyToken } = require("../middleware/authMiddleware");
+
+
 
 const router = express.Router();
 
@@ -15,7 +20,7 @@ const upload = multer({ storage });
 
 // Routes
 router.post(
-  "/save",
+  "/save",verifyToken,
   upload.fields([
     { name: "photo", maxCount: 1 },
     { name: "aadharUpload", maxCount: 1 },
@@ -25,7 +30,9 @@ router.post(
   savePersonalDetails
 );
 
-router.get("/", getAllPersonalDetails);
-router.get("/:email", getPersonalDetails);
+router.get("/me", verifyToken, getMyPersonalDetails);
+router.get("/:email", verifyToken, getPersonalDetailsByEmail);
+router.get("/", verifyToken, getAllPersonalDetails);
+
 
 module.exports = router;
