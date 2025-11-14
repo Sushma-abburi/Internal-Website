@@ -151,9 +151,10 @@ const ProfessionalDetails = require("../models/professionalDetails");
 const calculateLeaves = require("../utils/leaveCalculator");
 const { blobServiceClient, containerName } = require("../config/azureBlob");
 
-// Upload to Azure
+// Azure Upload
 async function uploadToAzure(file) {
   if (!file) return null;
+
   const containerClient = blobServiceClient.getContainerClient(containerName);
   await containerClient.createIfNotExists({ access: "container" });
 
@@ -169,13 +170,15 @@ async function uploadToAzure(file) {
   };
 }
 
-// ---------------------------------------------------------------
-// APPLY LEAVE
-// ---------------------------------------------------------------
+// --------------------------------------------
+// APPLY LEAVE (uses login email)
+// --------------------------------------------
 exports.createLeave = async (req, res) => {
   try {
+  const officialEmail = req.user.email; // 👈 taken from token
+
     const {
-      employeeId,    // EMP001, EMP1009 ... (YOU WILL USE THIS)
+      employeeId,
       employeeName,
       fromDate,
       toDate,
@@ -187,70 +190,83 @@ exports.createLeave = async (req, res) => {
       return res.status(400).json({ msg: "Missing required fields." });
     }
 
-    // 🔍 Get joining date from professional details
+    // ----------------------------------------
+    // 1️⃣ FIND EMPLOYEE PROFESSIONAL DETAILS
+    // ----------------------------------------
     const prof = await ProfessionalDetails.findOne({ employeeId });
+
     if (!prof) {
-      return res.status(404).json({ msg: "No professional details found for this employee." });
+      return res.status(404).json({
+        msg: "Employee professional details not found. Invalid employeeId"
+      });
     }
 
     const joiningDate = new Date(prof.dateOfJoining);
 
-    // 🔢 Calculate number of days
+    // ----------------------------------------
+    // 2️⃣ CALCULATE LEAVE DAYS
+    // ----------------------------------------
     const start = new Date(fromDate);
     const end = new Date(toDate);
-    const diffDays =
-      Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+    const diffDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
 
-    // 🔍 Find approved leaves
-    const usedLeavesDB = await Leave.find({ employeeId, status: "Approved" });
+    // ----------------------------------------
+    // 3️⃣ GET APPROVED LEAVES FOR THIS EMPLOYEE
+    // ----------------------------------------
+    const approvedLeaves = await Leave.find({ employeeId, status: "Approved" });
 
     const used = { CL: {}, SL: {} };
 
-    usedLeavesDB.forEach((l) => {
-      const monthKey = l.fromDate.toISOString().substring(0, 7);
-      const typeKey = l.leaveType === "Casual" ? "CL" : "SL";
-      used[typeKey][monthKey] =
-        (used[typeKey][monthKey] || 0) + l.daysApplied;
+    approvedLeaves.forEach((lv) => {
+      const monthKey = lv.fromDate.toISOString().substring(0, 7); // YYYY-MM
+      const key = lv.leaveType === "Casual" ? "CL" : "SL";
+
+      used[key][monthKey] = (used[key][monthKey] || 0) + lv.daysApplied;
     });
 
-    // ✔ Calculate updated leave summary
+    // ----------------------------------------
+    // 4️⃣ CALCULATE LEAVES FROM JOINING MONTH
+    // ----------------------------------------
     const summary = calculateLeaves(joiningDate, used);
     const latest = summary.summary.at(-1);
 
+    // ----------------------------------------
+    // 5️⃣ VALIDATE AVAILABLE LEAVES
+    // ----------------------------------------
     if (leaveType === "Casual" && latest.balanceCL < diffDays) {
       return res.status(400).json({
-        msg: `Not enough casual leaves. Available: ${latest.balanceCL}, Required: ${diffDays}`,
+        msg: `Not enough Casual Leaves. Available: ${latest.balanceCL}, Needed: ${diffDays}`
       });
     }
 
     if (leaveType === "Sick" && latest.balanceSL < diffDays) {
       return res.status(400).json({
-        msg: `Not enough sick leaves. Available: ${latest.balanceSL}, Required: ${diffDays}`,
+        msg: `Not enough Sick Leaves. Available: ${latest.balanceSL}, Needed: ${diffDays}`
       });
     }
 
-    // 📁 Upload file if provided
+    // ----------------------------------------
+    // 6️⃣ FILE UPLOAD (IF EXISTS)
+    // ----------------------------------------
     let file = null;
     if (req.file) {
-      file = {
-        filename: req.file.originalname,
-        path: await uploadToAzure(req.file.buffer, req.file.originalname),
-        mimetype: req.file.mimetype,
-        size: req.file.size,
-      };
+      file = await uploadToAzure(req.file);
     }
 
-    // 🟢 Save leave
+    // ----------------------------------------
+    // 7️⃣ SAVE LEAVE
+    // ----------------------------------------
     const leave = new Leave({
       employeeId,
       employeeName,
+      officialEmail,
       fromDate: start,
       toDate: end,
       daysApplied: diffDays,
       leaveType,
       reason,
       file,
-      status: "Sent",
+      status: "Sent"
     });
 
     await leave.save();
@@ -262,8 +278,10 @@ exports.createLeave = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("❌ Error applying leave:", error);
-    res.status(500).json({ msg: "Server Error", error: error.message });
+    res.status(500).json({
+      msg: "Server Error",
+      error: error.message
+    });
   }
 };
 
@@ -359,6 +377,78 @@ exports.getAllLeaves = async (req, res) => {
     });
   } catch (error) {
     console.error("❌ Error fetching all leaves:", error);
+    res.status(500).json({ msg: "Server Error", error: error.message });
+  }
+};
+// ---------------------------------------------------------------
+// GET LATEST LEAVE STATUS USING EMPLOYEE ID
+// ---------------------------------------------------------------
+exports.getLatestLeaveStatusByEmployeeId = async (req, res) => {
+  try {
+    const { employeeId } = req.params;
+
+    const latestLeave = await Leave.findOne({ employeeId })
+                                  .sort({ createdAt: -1 });
+
+    if (!latestLeave) {
+      return res.status(404).json({
+        msg: "No leave found for this employee"
+      });
+    }
+
+    res.status(200).json({
+      msg: "Latest leave status fetched successfully",
+      employeeId,
+      status: latestLeave.status,
+      leaveDetails: latestLeave
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      msg: "Server Error",
+      error: error.message
+    });
+  }
+};
+exports.getLeavesByStatus = async (req, res) => {
+  try {
+    const { employeeId } = req.params;
+    const { status } = req.query; // ?status=Approved
+
+    const leaves = await Leave.find({ employeeId, status })
+                              .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      msg: "Leaves fetched successfully",
+      count: leaves.length,
+      data: leaves
+    });
+
+  } catch (error) {
+    res.status(500).json({ msg: "Server Error", error: error.message });
+  }
+};
+exports.approveLeaveByEmployeeIdAndDate = async (req, res) => {
+  try {
+    const { employeeId, date } = req.params;
+
+    const leave = await Leave.findOne({
+      employeeId,
+      fromDate: new Date(date)
+    });
+
+    if (!leave) {
+      return res.status(404).json({ msg: "Leave not found" });
+    }
+
+    leave.status = "Approved";
+    await leave.save();
+
+    res.status(200).json({
+      msg: "Leave approved successfully",
+      leave
+    });
+  } catch (error) {
     res.status(500).json({ msg: "Server Error", error: error.message });
   }
 };

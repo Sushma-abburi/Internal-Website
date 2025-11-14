@@ -41,6 +41,7 @@ const {
   getMyProfessionalDetails,
   getProfessionalDetailsByEmail,
   getAllProfessionalDetails,
+  getProfessionalDetailsByEmployeeId
 } = require("../controllers/professionalController");
 
 // Save / Update
@@ -58,6 +59,8 @@ router.get("/me", verifyToken, getMyProfessionalDetails);
 router.get("/:email", verifyToken, getProfessionalDetailsByEmail);
 
 // Get all (admin)
-router.get("/", verifyToken, getAllProfessionalDetails);
+router.get("/all",  getAllProfessionalDetails);
+router.get("/id/:employeeId", getProfessionalDetailsByEmployeeId);
+
 
 module.exports = router;

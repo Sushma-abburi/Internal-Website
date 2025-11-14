@@ -48,74 +48,80 @@
 //     joiningDate,
 //   };
 // };
-const moment = require("moment");
+/**
+ * Leave Calculator for Financial Year (APRIL → MARCH)
+ * 
+ * Rules:
+ * ---------------------------------------------------
+ * • 1 CL per month (NO carry forward to next FY)
+ * • 1 SL per month (carry forward allowed)
+ * • Leaves start from employee joining month
+ * • unused CL/SL carry forward to next month
+ */
 
-function calculateLeaves(joiningDate, usedLeaves = { CL: {}, SL: {} }) {
-  const join = moment(joiningDate);
-  const now = moment();
+module.exports = function calculateLeaves(joiningDate, used) {
+  const result = {
+    summary: [],
+  };
 
-  let fyStart, fyEnd;
+  const today = new Date();
 
-  // Determine financial year (April -> March)
-  if (now.month() + 1 < 4) {
-    fyStart = moment(`${now.year() - 1}-04-01`);
-    fyEnd = moment(`${now.year()}-03-31`);
-  } else {
-    fyStart = moment(`${now.year()}-04-01`);
-    fyEnd = moment(`${now.year() + 1}-03-31`);
-  }
+  // 🔥 Start of financial year = April 1 of current year
+  const fyStart =
+    today.getMonth() + 1 >= 4
+      ? new Date(today.getFullYear(), 3, 1)
+      : new Date(today.getFullYear() - 1, 3, 1);
 
-  // Leave starts from joining month or FY start
-  const startDate = join.isAfter(fyStart)
-    ? join.clone().startOf("month")
-    : fyStart.clone();
+  // If employee joined AFTER FY Start → start from joining date
+  let start = joiningDate > fyStart ? new Date(joiningDate) : new Date(fyStart);
 
-  let date = startDate.clone();
-  let CL_balance = 0;
-  let SL_balance = 0;
+  // Normalize date to 1st of month
+  start = new Date(start.getFullYear(), start.getMonth(), 1);
 
-  let summary = [];
+  const end = new Date(today.getFullYear(), today.getMonth(), 1);
 
-  while (date.isSameOrBefore(fyEnd)) {
-    const monthKey = date.format("YYYY-MM");
+  let balanceCL = 0;
+  let balanceSL = 0;
 
-    const usedCL = usedLeaves.CL?.[monthKey] || 0;
-    const usedSL = usedLeaves.SL?.[monthKey] || 0;
+  // 🔥 Loop through all months from start → end
+  while (start <= end) {
+    const monthKey = start.toISOString().substring(0, 7); // yyyy-mm
 
-    // Earn monthly leaves
-    CL_balance = CL_balance + 1 - usedCL;
-    SL_balance = SL_balance + 1 - usedSL;
+    // Each month earns:
+    balanceCL += 1; // 1 casual per month
+    balanceSL += 1; // 1 sick per month
 
-    if (CL_balance < 0) CL_balance = 0;
-    if (SL_balance < 0) SL_balance = 0;
+    // Deduct used leaves
+    const usedCL = used.CL[monthKey] || 0;
+    const usedSL = used.SL[monthKey] || 0;
 
-    summary.push({
+    balanceCL -= usedCL;
+    balanceSL -= usedSL;
+
+    // No negative balances
+    if (balanceCL < 0) balanceCL = 0;
+    if (balanceSL < 0) balanceSL = 0;
+
+    // Push to monthly summary
+    result.summary.push({
       month: monthKey,
       earnedCL: 1,
-      usedCL,
-      balanceCL: CL_balance,
-
       earnedSL: 1,
+      usedCL,
       usedSL,
-      balanceSL: SL_balance
+      balanceCL,
+      balanceSL,
     });
 
-    date.add(1, "month");
+    // Move to next month
+    start.setMonth(start.getMonth() + 1);
+
+    // If month = April → RESET CL ONLY (NEW FINANCIAL YEAR)
+    if (start.getMonth() === 3 && start.getDate() === 1) {
+      balanceCL = 0; // Reset casual
+      // SL NOT reset (carry forward)
+    }
   }
 
-  // END OF FY RULES
-  const finalCL = 0; // ❌ Casual leaves reset every April 1
-  const finalSL = SL_balance; // ✔ Sick leaves carry forward
-
-  return {
-    financialYearStart: fyStart.format("YYYY-MM-DD"),
-    financialYearEnd: fyEnd.format("YYYY-MM-DD"),
-    summary,
-    closingBalance: {
-      CL: finalCL,
-      SL: finalSL
-    }
-  };
-}
-
-module.exports = calculateLeaves;
+  return result;
+};

@@ -19,14 +19,15 @@ const {
   createTimeEntry,
   getMyTimeEntries,
   updateTimeEntryByEmail,
-  patchTimeEntryByEmail
-,
+  patchTimeEntryByEmail,
+  
+
 
 } = require("../controllers/timesheetController");
 const { verifyToken } = require("../middleware/authMiddleware");
 
 // ✅ Employee fills timesheet (requires login)
-router.post("/", verifyToken, createTimeEntry);
+router.post("/create", verifyToken, createTimeEntry);
 
 // ✅ Get logged-in employee’s timesheet entries
 router.get("/", verifyToken, getMyTimeEntries);
@@ -34,6 +35,7 @@ router.put("/update", verifyToken, updateTimeEntryByEmail);
 
 // 🔧 Update PARTIAL entry (PATCH)
 router.patch("/update", verifyToken, patchTimeEntryByEmail);
+// router.put("/approve/:leaveId", approveLeaveAndCreateTimesheet);
 
 
 module.exports = router;

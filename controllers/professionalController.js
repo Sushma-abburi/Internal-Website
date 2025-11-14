@@ -198,6 +198,8 @@ exports.saveProfessionalDetails = async (req, res) => {
       { officialEmail },  // 👈 update using token email
       {
         officialEmail,
+        employeeId: body.employeeId,        // 👈 NEW FIELD ADDED
+
         dateOfJoining: body.dateOfJoining,
         role: body.role,
         department: body.department,
@@ -279,5 +281,24 @@ exports.getAllProfessionalDetails = async (req, res) => {
 
   } catch (err) {
     res.status(500).json({ msg: "Server Error", error: err.message });
+  }
+};
+exports.getProfessionalDetailsByEmployeeId = async (req, res) => {
+  try {
+    const { employeeId } = req.params;
+
+    const record = await ProfessionalDetails.findOne({ employeeId });
+
+    if (!record) {
+      return res.status(404).json({ msg: "No professional details found for this employeeId" });
+    }
+
+    res.status(200).json({
+      msg: "Professional details fetched successfully",
+      data: record,
+    });
+
+  } catch (error) {
+    res.status(500).json({ msg: "Server Error", error: error.message });
   }
 };

@@ -24,6 +24,7 @@
 const express = require("express");
 const router = express.Router();
 const multer = require("multer");
+const { verifyToken } = require("../middleware/authMiddleware");
 
 // Memory storage for Azure uploads
 const upload = multer({ storage: multer.memoryStorage() });
@@ -32,14 +33,18 @@ const {
   createLeave,
   getLeaveSummary,
   updateLeaveByEmployeeId,
-  getAllLeaves
+  getAllLeaves,
+   getLatestLeaveStatusByEmployeeId,
+  getLeavesByStatus,
+  approveLeaveByEmployeeIdAndDate
+
 } = require("../controllers/leaveController");
 
 // --------------------------------------------------------
 // APPLY LEAVE  (POST)
 // --------------------------------------------------------
 router.post(
-  "/apply",
+  "/apply",verifyToken,
   upload.single("file"),   // optional file upload
   createLeave
 );
@@ -63,5 +68,9 @@ router.put(
   updateLeaveByEmployeeId
 );
 router.get("/all", getAllLeaves);
+router.get("/employee/:employeeId/latest", getLatestLeaveStatusByEmployeeId);
+router.get("/employee/:employeeId/filter", getLeavesByStatus);
+router.put("/approve/:employeeId/:date", approveLeaveByEmployeeIdAndDate);
+
 
 module.exports = router;

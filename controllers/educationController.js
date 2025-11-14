@@ -146,22 +146,47 @@ async function uploadToAzure(fileBuffer, originalname, mimetype) {
 // -------------------------
 const saveEducationDetails = async (req, res) => {
   try {
-    const officialEmail = req.user.email; // 👈 login email
+    const officialEmail = req.user.email; 
     const body = req.body;
 
-    // Store official email
+    // Attach official email
     body.officialEmail = officialEmail;
 
+    // Convert hasMTech to boolean
+    body.hasMTech =
+      body.hasMTech === "true" || body.hasMTech === true ? true : false;
+
+    // Upload helper
     const getFileObj = async (field) => {
       if (!req.files?.[field]) return null;
       const f = req.files[field][0];
       return await uploadToAzure(f.buffer, f.originalname, f.mimetype);
     };
 
+    // Required certificates
     const certificate10 = await getFileObj("certificate10");
     const certificate12 = await getFileObj("certificate12");
     const certificateUG = await getFileObj("certificateUG");
-    const certificateMTech = await getFileObj("certificateMTech");
+
+    // -------------------------
+    // 🌟 MTECH VALIDATION LOGIC
+    // -------------------------
+    let certificateMTech = null;
+
+    if (body.hasMTech === true) {
+      // user marked checkbox
+      if (!req.files?.certificateMTech) {
+        return res.status(400).json({
+          msg: "MTech certificate is required because hasMTech = true",
+        });
+      }
+      certificateMTech = await getFileObj("certificateMTech");
+    } else {
+      // user does not have MTech → remove fields
+      delete body.collegeNameMTech;
+      delete body.yearMTech;
+      delete body.cgpaMTech;
+    }
 
     const educationData = {
       ...body,
@@ -171,7 +196,7 @@ const saveEducationDetails = async (req, res) => {
       ...(certificateMTech && { certificateMTech }),
     };
 
-    // Upsert using officialEmail
+    // Upsert
     const updated = await Education.findOneAndUpdate(
       { officialEmail },
       educationData,
