@@ -3,10 +3,13 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const sendEmail = require("../utils/sendEmail");
+const PersonalDetails = require("../models/personalDetails");
+const Education = require("../models/educationDetails");
+const ProfessionalDetails = require("../models/professionalDetails");
 
 
 
-// 🧩 Login Employee
+
 
 // 🔐 Login Employee
 exports.loginEmployee = async (req, res) => {
